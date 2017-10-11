@@ -131,9 +131,7 @@ public class SymbolTable {
                 list = table[hash];    
                 for( int j = 0; j < list.size(); j++ ){
                     if(list.get(j).getValue().equals(value)){
-                        if(list.get(j).getScope() == this.scope){  
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
