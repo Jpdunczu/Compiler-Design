@@ -52,7 +52,7 @@ public class SyntaxAnalyzer {
             switch(token.type){
                 case 16:
                     if(procToken == true) {
-                        throwException(token);
+                        throwException(token,"Program is invalid, two 'procedure' keywords found.");
                         break;
                     }
                     procToken = true;   // match PROCTOKEN
@@ -76,7 +76,7 @@ public class SyntaxAnalyzer {
                             break;
                         }
                     } else {
-                        throwException(token);
+                        throwException(token,"Program is invalid, expected an 'IDTOK'");
                         break;
                     }
                 case 13:
@@ -89,7 +89,7 @@ public class SyntaxAnalyzer {
                             break;
                         }
                     } else {
-                        throwException(token);
+                        throwException(token, "Program is invalid, expected 'IS'.");
                         break;
                     }
                 case 7:
@@ -101,7 +101,7 @@ public class SyntaxAnalyzer {
                         nextToken();
                         break;
                     } else {
-                        throwException(token);
+                        throwException(token, "Program is invalid.");
                         break;
                     }
                 case 10:
@@ -112,11 +112,11 @@ public class SyntaxAnalyzer {
                             break;
                         }
                     } else {
-                        throwException(token);
+                        throwException(token,"Invalid statement closure, no BEGIN found.");
                         break;
                     }
                 default:
-                    throwException(token);
+                    throwException(token,"Program is invalid.");
             }
     }
     
@@ -141,8 +141,8 @@ public class SyntaxAnalyzer {
         return scanner.getToken();
     }
     
-    private void throwException(LexicalAnalyzer.Token token) {
-        System.out.println("Terminating parse in routine at line: "+token.foundAt+" on Token: "+token.lexeme);
+    private void throwException(LexicalAnalyzer.Token token, String message) {
+        System.out.println("Terminating parse in routine at line: "+token.foundAt+" on Token: "+token.lexeme+" Error:"+message );
         System.out.println("LMD: "+lmd);
     }
     
@@ -169,7 +169,7 @@ public class SyntaxAnalyzer {
                 checkRest(getNextToken());
                 break;
             default:
-                throwException(t);
+                throwException(t,"Invalid declaration.");
         }
     }
 
@@ -200,14 +200,14 @@ public class SyntaxAnalyzer {
                                     appendLMD("7");     // add rule 7 to LMD list
                                     nextToken();
                                     break;
-                                } else { throwException(t); break; }
-                            } else { throwException(t); break; }
-                        } else { throwException(t); break; }
+                                } else { throwException(t,"Invalid rule 7, expected a ';'"); break; }
+                            } else { throwException(t,"Invalid rule 7, expected a literal value."); break; }
+                        } else { throwException(t,"Invalid rule 7, expected assignment."); break; }
                     default:
-                       throwException(t);
+                       throwException(t, "Invalid rule 7.");
                 }
             default:
-                throwException(token);
+                throwException(token, "Invalid rest.");
         }
     }
     
@@ -249,31 +249,136 @@ public class SyntaxAnalyzer {
                 checkLoopStat(getNextToken());
                 break;
             default:
-                throwException(token);
+                throwException(token, "Statement is invalid.");
         }
     }
 
-    private void checkAssignmentStat(LexicalAnalyzer.Token nextToken) {
+    private void checkAssignmentStat(LexicalAnalyzer.Token nextToken) throws IOException {
         System.out.println();
+        switch(nextToken.type){
+            case 25:    //  :=
+                addToTable(nextToken.lexeme);   
+                appendLMD("24");    // express --> term expprime
+                checkExpres(getNextToken());
+                break;
+            default:
+                throwException(nextToken, "Invalid rule 24, expected an expression.");
+        }
     }
 
     private void checkIfStat(LexicalAnalyzer.Token nextToken) {
-        System.out.println();    
+        System.out.println("checkIfStat");    
     }
 
     private void checkReadStat(LexicalAnalyzer.Token nextToken) {
-        System.out.println();    
+        System.out.println("checkReadStat");    
     }
 
     private void checkWriteStat(LexicalAnalyzer.Token nextToken) {
-        System.out.println();    
+        System.out.println("checkWriteStat");    
     }
 
     private void checkBlockStat(LexicalAnalyzer.Token nextToken) {
-        System.out.println();    }
+        System.out.println("checkBlockStat");    
+    }
     
 
     private void checkLoopStat(LexicalAnalyzer.Token nextToken) {
-        System.out.println();   
+        System.out.println("checkLoopStat");   
+    }
+
+    private boolean checkExpres(LexicalAnalyzer.Token nextToken) throws IOException {
+        if(checkTerm(nextToken)){
+            appendLMD("24");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkTerm(LexicalAnalyzer.Token nextToken) throws IOException {
+        if(checkRelFactor(nextToken)){
+            appendLMD("27");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkRelFactor(LexicalAnalyzer.Token nextToken) throws IOException {
+        if(checkFactor(nextToken)){ // cannot be epsilon
+            appendLMD("30");
+            checkFactorPrime(getNextToken());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkFactor(LexicalAnalyzer.Token nextToken) throws IOException {
+        LexicalAnalyzer.Token t;
+        switch(nextToken.type){
+            case 15:    //  NOTTOK
+                addToTable(nextToken.lexeme);   // add the NOT
+                if(checkFactor((t = getNextToken()))){  // get the next token and check if it's a factor
+                    addToTable(t.lexeme);
+                    appendLMD("33");    //  factor --> NOTTOK factor
+                    return true;
+                } else {
+                    throwException(t, "Invalid rule 33, expected a factor.");
+                    return false;
+                }
+            case 1:     //  IDTOK
+                addToTable(nextToken.lexeme);
+                appendLMD("24");    // factor --> idnonterm
+                return true;
+            case 2:     //  LITTOK
+                addToTable(nextToken.lexeme);
+                appendLMD("25");    //  factor --> LITTOK
+                return true;
+            case 21:    // '('
+                addToTable(nextToken.lexeme);
+                if(checkExpres((t = getNextToken()))) { // check if there is a valid 'expression'
+                    if( (t = getNextToken()).type == 22){   //  ')'
+                        addToTable(t.lexeme);
+                        appendLMD("36");    //  factor --> '(' express ')'
+                        return true;
+                    } else { throwException(t, "Invalid rule 36, expected a ')'"); return false; }
+                } else { throwException(t, "Invalid rule 36, expected an expression."); return false; }
+            default:
+                return false;
+        }
+    }
+
+    private void checkFactorPrime(LexicalAnalyzer.Token nextToken) throws IOException {
+        LexicalAnalyzer.Token t;
+        switch(nextToken.type) {
+            case 6: //  RELOPTOK
+                addToTable(nextToken.lexeme);
+                appendLMD("31");    // factorprime --> RELOPTOK factor
+                if(checkFactor((t = getNextToken()))) {
+                    addToTable(t.lexeme);
+                } else { throwException(t, "Invalid rule 31, expected factor.");  }
+            default:
+                appendLMD("32");    //  factorprin --> epsilon
+                checkTermPrime(nextToken);
+        }
+    }
+
+    private void checkTermPrime(LexicalAnalyzer.Token nextToken) throws IOException {
+        LexicalAnalyzer.Token t;
+        switch(nextToken.type) {
+            case 5: //  MULOPTOK
+                appendLMD("28");    // termprime --> MULOPTOK relfactor termprime
+                addToTable(nextToken.lexeme);
+                if(checkRelFactor((t = getNextToken()))) {
+                    addToTable(t.lexeme);
+                    checkTermPrime(getNextToken());
+                } else { throwException(t, "Invalid rule 28, expected relfactor"); }
+            default:
+                appendLMD("29");    // termprim --> epsilon
+                checkExprime(nextToken);    // back to 27: express --> term exprime
+        }
+    }
+
+    private void checkExprime(LexicalAnalyzer.Token nextToken) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
