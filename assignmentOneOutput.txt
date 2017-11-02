@@ -1,0 +1,26 @@
+procedure LEGAL is     -- this is a comment	  i : integer;       -- declarations go here        ZERO : constant integer := 0;	  begin
+
+	declare Id_token : integer; begin  -- testing a correct {blockst}
+		get( thisBook1 ); -- testing a correct {readstat}
+		put( "this is a string literal about thisBook1" ); -- test writestat with strlitok
+		put_line( not bad_review ); -- test writestat with expression
+		-- test new scopes
+		begin
+		new_idnonterm := id_tok <> 12;
+			begin
+
+			-- test a complicated expression
+			while 12 > ( not ( 134.5 < arbitrary_number * factor <> factor2 + 36 ) ) * not ( factor3 <> factor4 ) 
+				loop
+					begin
+						if -- test IFSTAT
+						not factor5
+						then
+						idnonterm2 := 64 > 12;
+						end if;
+					end;
+				end loop;
+			end;
+		end;	      while not (i = 0) loop   -- while <exp> loop <body> end loop;                   declare  pos : boolean;  -- more decls in blocks                        j : integer;
+			UPPERCASE : CoNsTaNt InTeGeR := 2; -- testing the language for case sensitivity                        begin                       put("Enter an integer");		           get (i);                       pos := i > 0;                       if pos then put ("entered positive"); end if;                           -- if <exp> then <statements> end if;                       if i<0 then put ("entered negative"); end if;                   end;              end loop;      end LEGAL;
+EOF
