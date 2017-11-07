@@ -11,48 +11,58 @@
  */
 package cs4110.homework.pkg1;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 /**
  *
  * @author joshuaduncan
  */
 public class SymbolTable {
     
-    private int scope;  // global so to keep track of the scope we are currently creating Tokens for.
+    private int scope;  // global to keep track of the scope we are currently creating Tokens for.
     private int scopeCount; // global to keep track of the total number of scopes.
     private ArrayList[] table; //global so it lasts the life of the class.
     private ArrayList<ArrayList[]> stack = new ArrayList();
-    private ArrayList<Token> list;
+    private ArrayList<LexicalAnalyzer.Token> list;
+    private static List<String> keywords;
+    LexicalAnalyzer.Token token;
+    Outputer output;
+    private int offSet;
     
-    public SymbolTable(ArrayList<String> entry){
+    
+    public SymbolTable(){
+        // default constructor
+        keywords = new ArrayList<>(Arrays.asList("begin", "constant", "declare", "end", "get", "if", 
+                "is", "loop", "not", "procedure", "put", "put_line", "then", "while"));
+    }
+    public SymbolTable(Outputer output){
+        this.output = output;
+    }
+    
+    public void insertEntry(LexicalAnalyzer.Token token){
         stack.add(0, new ArrayList[11]);
         //create the Lexemes
-        for(int i = 0; i < entry.size(); i++){  
-            table = new ArrayList[11];
-            
-            int hash = entry.get(i).hashCode()%11;  
-            if( hash < 0){
-                hash *= -1;
-            }
-            
-            /*
-            *    Check/update scope
-            */
-            if(entry.get(i).equals("{")){ 
+        //for(int i = 0; i < entry.size(); i++)
+        
+        this.offSet = offSet + token.offSet;
+        int hash = getHash(token.lexeme);
+        /*
+         *    Check/update scope
+         */
+        switch (token.lexeme.toLowerCase()) {
+            case "begin":
+                table = new ArrayList[11];
                 this.scopeCount++;
                 stack.add(scopeCount, table);
                 scope = scopeCount;
-            } else if (entry.get(i).equals("}")){
+                break;
+            case "end":
                 scope -= 1;
-            }
-                if( !findInCurrentScope(entry.get(i), hash) ){   
-                    if( !findInAllScopes(entry.get(i), hash) ){
-                        insert(entry.get(i), hash);
-                    }else{
-                        System.out.println("'"+entry.get(i) + "' found in global scope.");
-                    }
-                }else{
-                    System.out.println("'"+entry.get(i) + "' found in current scope "+ scope);
-                }
+                break;
+            default:
+                insert(token, hash);
+                break;
         }
     }
  
@@ -86,19 +96,16 @@ public class SymbolTable {
     /************
     *   FIND    *
     ************/
-    public Token find(String value){
-        int hash = value.hashCode()%11;
-        if( hash < 0 ){
-            hash *= -1;
-        }
+    public LexicalAnalyzer.Token find(String value){
+        int hash = getHash(value);
         int currentScope = 0;
         while( currentScope <= scopeCount ) {
             table = stack.get(currentScope);
             if( table[hash] != null ){
                 list = table[hash];
                 for( int j = 0; j < list.size(); j++ ){
-                    if(list.get(j).getValue().equals(value)){
-                        return list.get(j).getThis();
+                    if(list.get(j).lexeme.equals(value)){
+                        return list.get(j);
                     }
                 }
             }else{
@@ -112,46 +119,69 @@ public class SymbolTable {
     /************
     *   INSERT  *
     ************/
-    public void insert(String value, int hash){
-        System.out.println("\nInsert:: Scope: " + scope + " Value: " + value+"\n");
-        Token newToken = new Token(value,scope);
-        table = stack.get(scope);
-        if( table[hash] == null )
+    public void insert(LexicalAnalyzer.Token token, int hash){
+        
+        //System.out.println("\nInsert:: Scope: " + scope + " Value: " + value+"\n");
+        if ( findInCurrentScope(token.lexeme) == null ){
+            table = stack.get(scope);
+        
+        if( table[hash] == null ) 
                 table[hash] = new <Token>ArrayList();
-        table[hash].add(newToken);
-        stack.set(scope,table);  
+            table[hash].add(token);
+            output.dTree(token.lexeme+" is type: "+token.strType+", Offset: "+offSet+" and isConstant="+token.isConstant);
+            stack.set(scope,table);
+        }
     }
     
     /********************
     *   FIND IN SCOPES  *
     ********************/
-    public boolean findInCurrentScope(String value, int hash){
+    public LexicalAnalyzer.Token findInCurrentScope(String value){
+        
+        int hash = getHash(value);
         table = stack.get(scope);
             if( table[hash] != null ){                  
                 list = table[hash];    
                 for( int j = 0; j < list.size(); j++ ){
-                    if(list.get(j).getValue().equals(value)){
-                        return true;
+                    if(list.get(j).lexeme.equals(value)) {
+                        return list.get(j);
                     }
                 }
             }
-        return false;
+        return null;
     }
     
-    public boolean findInAllScopes(String value, int hash){
+    public LexicalAnalyzer.Token findInAllScopes(String value) {
+        int hash = getHash(value);
         int currentScope = 0;
         while( currentScope <= scopeCount ) {
             table = stack.get(currentScope);
             if( table[hash] != null ){
                 list = table[hash];
                 for( int j = 0; j < list.size(); j++ ){
-                    if(list.get(j).getValue().equals(value)){
-                        return true;
+                    if(list.get(j).lexeme.equals(value)){
+                        return list.get(j);
                     }
                 }
             }
             currentScope++;
         }
-        return false;
+        return null;
+    }
+    
+    public static int isKeyword(String word) {
+        for( String keyword : keywords ){
+            if( keyword.equals(word) )
+                return keywords.indexOf(word);
+        } 
+        return -1;
+    }
+    
+    public int getHash(String value) {
+        int hash = value.hashCode()%11;
+        if( hash < 0 ){
+            hash *= -1;
+        }
+        return hash;
     }
 }
