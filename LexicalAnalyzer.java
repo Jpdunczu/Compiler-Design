@@ -11,6 +11,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -26,22 +29,54 @@ public class LexicalAnalyzer extends FileReader {
     private int nextIndex;
     private boolean eoln;
     private final PrintWriter writer;
-    private final SymbolTable st;
+    //private final SymbolTable st;
+    private static List<String> keywords = new ArrayList<>(Arrays.asList("begin", "constant", "declare", "end", "get", "if", 
+                "is", "loop", "not", "procedure", "put", "put_line", "then", "while"));
     private boolean eof;
     private StringBuilder output;
     
     /************
     *   TOKENS  *
     *************/
-    private static class Token {
+    public static class Token {
         String lexeme;
+        String strType;
         int type;
         int foundAt;
+        boolean isConstant;
+        int offSet;
+        SyntaxAnalyzer.ExpressionRecord ex;
         
         Token(String lexeme, int type, int lineNumber){
             this.lexeme = lexeme;
             this.type = type;
             this.foundAt = lineNumber;
+        }
+        
+        public void setOffSet(int offset){
+            this.offSet = offset;
+        }
+        
+        public void setIsConstant(){
+            this.isConstant = true;
+        }
+        
+        public void changeType(String type){
+            // 1=integer 2=boolean 3=float
+            switch(type.toLowerCase()){
+                case "integer":
+                    this.strType = type;
+                    setOffSet(-4);
+                    break;
+                case "boolean":
+                    this.strType = type;
+                    setOffSet(-4);
+                    break;
+                case "float":
+                    this.strType = type;
+                    setOffSet(-8);
+                    break;
+            }
         }
     }
     
@@ -52,28 +87,27 @@ public class LexicalAnalyzer extends FileReader {
         super(file);
         this.file = file;
         output = new StringBuilder();
-        st = new SymbolTable();
+        tokenKey();
         br = new BufferedReader( new FileReader(this.file));
         writer = new PrintWriter("CS4110.Scanner.txt", "UTF-8");
-        fileBuffer();
-        writer.println(output);
-        writer.close();
+        //startScanning();
+        //writer.println(output);
+        //closeFile();
     }
     
     /************
     *   START   *
     ************/
-    private void fileBuffer() throws FileNotFoundException, IOException {
+    public void fileBuffer() throws FileNotFoundException, IOException {
         nextLine = br.readLine().trim();
         
-        System.out.println(nextLine);
+        //System.out.println(nextLine);
         setLineNumber();
         
         if( nextLine.isEmpty() ){
             fileBuffer();
         } else {
             clearAll();
-            getToken();
         }
     }
 
@@ -81,13 +115,13 @@ public class LexicalAnalyzer extends FileReader {
         return ( nextLine.length() < nextIndex+1 ) ? '$' : nextLine.charAt(nextIndex++);
     }
     
-    private void getToken() throws IOException {
+    public Token getToken() throws IOException {
         
         while( eoln == false ) {
             switch( getChar() ) {
                 
                 case '$':
-                    System.out.println("end of Line");
+                    //System.out.println("end of Line");
                     clearAll();
                     endOfLine();
                     break;
@@ -95,8 +129,7 @@ public class LexicalAnalyzer extends FileReader {
                 case ' ':
                     break;
                     
-                case ';': printOutput(new Token(";",23,lineNumber));
-                    break;
+                case ';': return (new Token(";",23,lineNumber));
                     
                 case '-':
                     if( getChar() == '-' ){
@@ -104,62 +137,53 @@ public class LexicalAnalyzer extends FileReader {
                         break;
                     } else {
                         backUp();
-                        printOutput(new Token("-",4,lineNumber));
+                        return (new Token("-",4,lineNumber));
                     }
-                    break;
                     
                 case ':':
                     if( getChar() == '=' ){
-                        printOutput(new Token(":=",25,lineNumber));
+                        return (new Token(":=",25,lineNumber));
                     }
                     else {
                         backUp();
-                        printOutput(new Token(":",24,lineNumber));
+                        return (new Token(":",24,lineNumber));
                     }
-                    break;
                     
-                case '(': printOutput(new Token("(",21,lineNumber));
-                    break;
+                case '(': return (new Token("(",21,lineNumber));
                     
-                case ')': printOutput(new Token(")",22,lineNumber));
-                    break;
+                case ')': return (new Token(")",22,lineNumber));
                     
                 case '<':
                     if( getChar() == '>' ){
-                        printOutput(new Token("<>",6,lineNumber));
+                        return (new Token("<>",6,lineNumber));
                     } else {
                         backUp();
-                        printOutput(new Token("<",6,lineNumber));
+                        return (new Token("<",6,lineNumber));
                     }
-                    break;
                     
-                case '+': printOutput(new Token("+",4,lineNumber));
-                    break;
+                case '>': return (new Token(">",6,lineNumber));
                     
-                case '/': printOutput(new Token("/",5,lineNumber));
-                    break;
+                case '+': return (new Token("+",4,lineNumber));
                     
-                case '*': printOutput(new Token("*",5,lineNumber));
-                    break;
+                case '/': return (new Token("/",5,lineNumber));
+                    
+                case '*': return (new Token("*",5,lineNumber));
                     
                 case '"':
-                    backUp();
-                    int firstQuote = nextIndex;
+                    int firstQuote = nextIndex-1;
                     boolean quotedText = true;
                     while( quotedText ){
                         switch( getChar() ){
                             case '"':
                                 quotedText = false;
                                 break;
-                            default:
                         }
                     }
-                    String literal = nextLine.substring(firstQuote, nextIndex);
-                    printOutput(new Token(literal,1,lineNumber));
-                    break;
+                    String literal = nextLine.substring(firstQuote, nextIndex).trim();
+                    System.out.println("got: "+literal+"from lexAnalyzer");
+                    return (new Token(literal,26,lineNumber));
                     
-                case '=': printOutput(new Token("=",26,lineNumber));
-                    break;
+                case '=': return (new Token("=",6,lineNumber));
                     
                 default:
                     backUp();
@@ -221,47 +245,77 @@ public class LexicalAnalyzer extends FileReader {
                                 break;
                             case '$':
                                 check = false;
-                                backUp();
                                 break;
-                            default:
                         }
+                        //System.out.print(nextLine.substring(start, nextIndex));
                     }
                     String word = nextLine.substring(start, nextIndex).trim();
-                    if( word.equals("EOF") ){
-                        endOfFile();
-                        break;
-                    } else { checkWord(word); }
-                    System.out.println("word: " + word);
+                    //System.out.println("start=" + start + "  nextIndex=" + nextIndex);
+                    switch( word.toLowerCase() ){
+                        case "or": return (new Token(word,4,lineNumber));
+                                    
+                        case "and": return (new Token(word,5,lineNumber));
+                            
+                        case "mod": return (new Token(word,5,lineNumber));
+                            
+                        case "integer": return (new Token(word,3,lineNumber));
+                            
+                        case "float": return (new Token(word,3,lineNumber));
+                            
+                        case "boolean": return (new Token(word,3,lineNumber));
+                            
+                        case "true": return (new Token(word,2,lineNumber));
+                            
+                        case "false": return (new Token(word,2,lineNumber));
+                            
+                        case "eof":
+                            endOfFile();
+                            break;
+                        default:
+                            return checkWord(word);
+                    }
+                    //System.out.println("word: " + word);
                     break;
             }
         }
-        if( eof !=  true ) { fileBuffer(); }
+        if( eof !=  true ) { 
+            fileBuffer();
+            return getToken();
+        } else { return (new Token("eof",-1,-1)); }
     }
     
     /****************
     *   UTILITIES   *
     ****************/
-    private void checkWord(String word) throws IOException {
+    private Token checkWord(String word) throws IOException {
         if( Pattern.matches("\\d\\d*", word ) ||                    //REG EXP "0..9"
                 Pattern.matches("\\d\\d*.\\d\\d*", word) ||     //REG EXP "0..9(0..9)* . 0..9(0..9)*"
                     word.toLowerCase().equals("false") ||
                         word.toLowerCase().equals("true")) {
-            printOutput(new Token(word,2,lineNumber));
+            return (new Token(word,2,lineNumber));
         } else {
-            int tokenNumber = st.isKeyword(word.toLowerCase());
+            int tokenNumber = isKeyword(word.toLowerCase());
             if( tokenNumber != -1 ) {
-                printOutput(new Token(word,tokenNumber+7,lineNumber));
+                return (new Token(word,tokenNumber+7,lineNumber));
             }
             else
-                printOutput(new Token(word,1,lineNumber));
+                return (new Token(word,1,lineNumber));
         }
     }
     
-    private void printOutput(Token token) throws IOException {
-        output.append("Token: " + token.lexeme + " Type: " + token.type + " @Line#: " + token.foundAt+ "\n");
+    public static int isKeyword(String word) {
+        for( String keyword : keywords ){
+            if( keyword.equals(word) )
+                return keywords.indexOf(word);
+        } 
+        return -1;
     }
     
-    private void backUp() { nextIndex--; }
+    public void startScanning() throws IOException{ fileBuffer(); }
+    
+    //private void printOutput(Token token) throws IOException { parser.parse(token); }
+    
+    private void backUp() { if(nextIndex > 0) nextIndex--; }
     
     private void endOfFile() { this.eof = true; }
     
@@ -274,7 +328,17 @@ public class LexicalAnalyzer extends FileReader {
         this.eoln = false;
     }
     
+    public void closeFile(){ writer.close(); }
     
-    
-    
+    private void tokenKey() {
+        this.output.append("  1            identifier\n" +
+"  2            any literal\n" +
+"  3            types\n" +
+"  4            addition operators\n" +
+"  5            multiplication operators\n" +
+"  6            relational operators\n" +
+"  7-20         Keywords\n" +
+"  21-25        Punctuation\n" +
+"  26           String Literals\n\n");
+    } 
 }
