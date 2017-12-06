@@ -497,7 +497,6 @@ public class SyntaxAnalyzer {
     *   or 'or' cases, in which case an additional set of MIPS instructions must 
     *   be generated. Afterwards it verifies the rest of the tokens matches the 
     *   grammar correctly and then ends.
-    * 
     */
     private void ifstat() throws IOException {
         ex = new ExpressionRecord();
@@ -535,7 +534,6 @@ public class SyntaxAnalyzer {
     *   <readstat> takes input from the user and saves it to a temporary location, 
     *   in this case a register depending on which type of input it receives. For 
     *   now only 2 cases are handled, integer and float.
-    * 
     */
     private void readstat() throws IOException {
         ex = new ExpressionRecord();
@@ -576,7 +574,6 @@ public class SyntaxAnalyzer {
     *   wants a new line to be generated after the output, so the global variable 
     *   'doesCR' is used to handle this. If there is a 'put_line' then doesCR is 
     *   set to true. This value will be checked later on during <writeexp>.
-    * 
     */
     private void writestat() throws IOException {
         mips.codeGen("# writestat");
@@ -602,8 +599,7 @@ public class SyntaxAnalyzer {
     *   one down immediately to signify the beginning of the loop.
     *   Then it gets the expression to be evaluated, <express> must return as a 
     *   boolean value, or else an error is generated. In the special case that 
-    *   there is an 'or' or 'and' statement
-    * 
+    *   there is an 'OR' or 'AND' statement.
     */
     private void loopst() throws IOException {
         ex = new ExpressionRecord();
@@ -654,7 +650,6 @@ public class SyntaxAnalyzer {
     *   There must be a begin token and there must be an end token.
     *   Both <declpart> and <stats> can be empty, all that is required by the 
     *   grammar are the three tokens.
-    * 
     */
     private void blockstat() throws IOException {
         appendLMD("19,");
@@ -672,7 +667,6 @@ public class SyntaxAnalyzer {
     *   This function checks if the current token is 'declare' then verifies 
     *   that there are declarations. Otherwise <declpart> can be empty in which 
     *   case the function does nothing except append the epsilon rule to the LMD.
-    * 
     */
     private void declpart() throws IOException {
         switch(currentToken.type){
@@ -691,23 +685,30 @@ public class SyntaxAnalyzer {
     *   WRITEEXP  
     *   Rule: 22,23 writeexp --> STRLITTOK | <express>
     * 
-    *   This function generates a label for the current String literal. The current token has to be a String literal if we have
-    *   reached this point in the Grammar so it is not checked here as this would have already been verified before <writeexp> was
-    *   called. The String literal is passed to the MIPS code gen class where it adds the appropriate code to the .data section of
-    *   the code, this in turn returns the label that it created for the string value. This label is assigned to the label variable
-    *   and used to generate the MIPS code. The function then checks if doesCr has been set to true, if so then there was a 'put_line'
-    *   and MIPS code is generated to call the 'newLine' variable pre-set in the .data of the MIPS code gen class which creates a 
-    *   new line.
+    * This function generates a label for the current String literal. The current 
+    * token has to be a String literal if we have reached this point in the Grammar 
+    * so it is not checked here as this would have already been verified before 
+    * <writeexp> was called. The String literal is passed to the MIPS code gen 
+    * class where it adds the appropriate code to the .data section of the code, 
+    * this in turn returns the label that it created for the string value. This 
+    * label is assigned to the label variable and used to generate the MIPS code. 
+    * The function then checks if doesCr has been set to true, if so then there 
+    * was a 'put_line' and MIPS code is generated to call the 'newLine' variable 
+    * pre-set in the .data of the MIPS code gen class which creates a new line.
     * 
-    *   If the current token is not a string literal then an Expression record is created and passed to expression.
+    * If the current token is not a string literal then an Expression record is 
+    * created and passed to expression.
     */
     private void writeexp() throws IOException {
         if(currentToken.type == 26) {    //  STRLITTOK
-            String label = mips.genStringLabel(currentToken.lexeme);    // adds the string to the .data section and returns the label used.
+            
+            // adds the string to the .data section and returns the label used.
+            String label = mips.genStringLabel(currentToken.lexeme);    
+            
             mips.codeGen("li\t$v0,4");
             mips.codeGen("la\t$a0,"+label);
             mips.codeGen("syscall");
-            if( doesCR ){
+            if( doesCR ){   // check for a Carriage return. only set to true if WRITETOK was 'put_line'
                 mips.codeGen("li\t$v0,4");
                 mips.codeGen("la\t$a0,newLine");
                 mips.codeGen("syscall");
@@ -729,9 +730,8 @@ public class SyntaxAnalyzer {
     * 
     *   @param er
     * 
-    *   This function controls the flow of grammar, it takes as a parameter an Expression record which it passes first to <term>
-    *   and then on to <exprime>.
-    * 
+    * This function controls the flow of grammar, it takes as a parameter an 
+    * Expression record which it passes first to <term> and then on to <exprime>.
     */
     private void express(ExpressionRecord er) throws IOException {
         appendLMD("24,");    // express --> term expprime
@@ -745,10 +745,11 @@ public class SyntaxAnalyzer {
     * 
     *   @param er
     * 
-    *   This function checks if the expression is an addition, subtraction or an 'or' expression. It creates two expression records,
-    *   a LHS and a RHS, and saves the parameter as the LHS. The block of local variables are used for MIPS code gen and some are used
-    *   to save values into the global expression record to be used in MIPS code gen by the calling function.
-    * 
+    * This function checks if the expression is an addition, subtraction or an 
+    * 'OR' expression. It creates two expression records, a LHS and a RHS, and 
+    * saves the parameter as the LHS. The block of local variables are used for 
+    * MIPS code gen and some are used to save values into the global expression 
+    * record to be used in MIPS code gen by the calling function.
     */ 
     private void exprime(ExpressionRecord er) throws IOException {
         if(currentToken.type == 4) {
@@ -773,12 +774,13 @@ public class SyntaxAnalyzer {
             match(currentToken,4);  //  ADDOPTOK
             term(rhs);  // call <term> and save it's value to the rhs expression record.
             
-            // check that neither side is a boolean, otherwise we skip this block, and make sure the both sides are of the same type.
+            // check that neither side is a boolean, otherwise we skip this block, 
+            // and make sure the both sides are of the same type.
             if( !(lhs.type.equals("boolean") && rhs.type.equals("boolean")) && (lhs.type.equals(rhs.type)) ) {
                 
                 /*
-                This switch statement checks which type of operation is to be performed. It then assigns a MIPS pseudo code value
-                to the oper String. 
+                This switch statement checks which type of operation is to be performed. 
+                It then assigns a MIPS pseudo code value to the oper String. 
                 */
                 switch(op){
                     case '+':
@@ -797,8 +799,9 @@ public class SyntaxAnalyzer {
                 }
                 
                 /*
-                Next we determine which load and store pseudo code and which registers to use in the code gen. This is needed because
-                the code for integers and floats is different.
+                Next we determine which load and store pseudo code and which 
+                registers to use in the code gen. This is needed because the code 
+                for integers and floats is different.
                 */
                 if( lhs.type.equals("integer") ){    // its an integer
                     load = "lw";
@@ -815,11 +818,15 @@ public class SyntaxAnalyzer {
                 }
                 
                 /*
-                This check determines if either side was a literal value, if it is then we have already generated code to load an 
-                immediate value and stored it in some register which would have been saved inside the expression record. This code
-                checks if the boolean value for this has been set to true, if so then the location to load the value from was also
-                stored in the expression record and we now want to access this value. Otherwise we need to load the value from the
-                stack pointer offset because it is a declared variable and will have been stored in the symbol table.
+                This check determines if either side was a literal value, if it 
+                is then we have already generated code to load an immediate value 
+                and stored it in some register which would have been saved inside 
+                the expression record. This code checks if the boolean value for 
+                this has been set to true, if so then the location to load the 
+                value from was also stored in the expression record and we now 
+                want to access this value. Otherwise we need to load the value 
+                from the stack pointer offset because it is a declared variable 
+                and will have been stored in the symbol table.
                 */
                 if( lhs.value != null ){
                     lhsLoc = lhs.value;
@@ -833,10 +840,15 @@ public class SyntaxAnalyzer {
                     rhsLoc = rhs.offSet+"($sp)";
                 }
                 
-                // The next 2 test code blocks check to see if the lhs and/or rhs were litteral values, if they were then we do not need
-                // to load the value from a memory location as we have already loaded an immediate value to a register, so it checks if
-                // the Expression record boolean value: 'isLitteral' is true, if it is then we skip the load from memory statement and 
-                // instead update the register value we are using with the one we loaded the immediate value into.
+                /*
+                The next 2 test code blocks check to see if the lhs and/or rhs 
+                were litteral values, if they were then we do not need to load 
+                the value from a memory location as we have already loaded an 
+                immediate value to a register, so it checks if the Expression 
+                record boolean value: 'isLitteral' is true, if it is then we skip 
+                the load from memory statement and instead update the register 
+                value we are using with the one we loaded the immediate value into.
+                */
                 if( !lhs.isLitteral ){
                     mips.codeGen(load+"\t$"+reg+tempReg1+","+lhsLoc+"\t#exprime --> ADDOPTOK");
                 } else {
@@ -873,8 +885,9 @@ public class SyntaxAnalyzer {
                 tempReg1 = getReg("r");
                 tempReg2 = getReg("r");
                 /*
-                for now boolean values are stored on the stack, this code retrieves them from their location and stores them in 
-                registers, then saves all the values in the isOR function of the Expression record.
+                for now boolean values are stored on the stack, this code retrieves 
+                them from their location and stores them in registers, then saves 
+                all the values in the isOR function of the Expression record.
                 */
                 mips.codeGen("lw\t$r"+tempReg1+","+lhs.offSet+"($sp)");
                 mips.codeGen("lw\t$r"+tempReg2+","+rhs.offSet+"($sp)");
@@ -894,8 +907,8 @@ public class SyntaxAnalyzer {
     * 
     *   @param er
     * 
-    *   This function serves as a Grammar check, it takes the expression record and passes it to <relfactor> and then on to <termprime>
-    * 
+    * This function serves as a Grammar check, it takes the expression record 
+    * and passes it to <relfactor> and then on to <termprime>
     */
     private void term(ExpressionRecord er) throws IOException {
         appendLMD("27,");   //  term --> relfactor termprime
@@ -905,15 +918,16 @@ public class SyntaxAnalyzer {
     
     /****************
     *   TERMPRIME 
-    *   Rule 28,29: termprime --> MULOPTOK <relfactor> <termprime>  |  <empty> 
+    *   Rule 28,29: <termprime> --> MULOPTOK <relfactor> <termprime>  |  <empty> 
     *   
     *   @param er
     * 
-    *   This function verifies the current token is a MULOPTOK, then copies the Expression record passed to it as a parameter
-    *   to the LHS, and calls <relfactor> with a new expression record 'rhs'. When this returns it sets up the variables for 
-    *   the MIPS code generation then determines which types it is dealing with. After generating the appropriate MIPS code it
-    *   frees the registers and finally calls itself with the updated Expression record to complete the grammar. 
-    * 
+    * This function verifies the current token is a MULOPTOK, then copies the 
+    * Expression record passed to it as a parameter to the LHS, and calls <relfactor> 
+    * with a new expression record 'rhs'. When this returns it sets up the variables 
+    * for the MIPS code generation then determines which types it is dealing with. 
+    * After generating the appropriate MIPS code it frees the registers and finally 
+    * calls itself with the updated Expression record to complete the grammar.
     */
     private void termprime(ExpressionRecord er) throws IOException {
         if(currentToken.type == 5) {
@@ -986,10 +1000,15 @@ public class SyntaxAnalyzer {
                     rhsLoc = rhs.offSet+"($sp)";
                 }
                 
-                // The next 2 test code blocks check to see if the lhs and/or rhs were litteral values, if they were then we do not need
-                // to load the value from a memory location as we have already loaded an immediate value to a register, so it checks the
-                // if the Expression record boolean isLitteral is true, if it is then we skip the load from memory statement and instead
-                // update the register value we are using with the one we loaded the immediate value into.
+                /*
+                The next 2 test code blocks check to see if the lhs and/or rhs 
+                were litteral values, if they were then we do not need to load 
+                the value from a memory location as we have already loaded an 
+                immediate value to a register, so it checks the if the Expression 
+                record boolean isLitteral is true, if it is then we skip the load 
+                from memory statement and instead update the register value we are 
+                using with the one we loaded the immediate value into.
+                */
                 if( !lhs.isLitteral ){
                     mips.codeGen(load+"\t$"+reg+tempReg1+","+lhsLoc+"\t#exprime --> MULOPTOK");
                 } else {
@@ -1026,8 +1045,8 @@ public class SyntaxAnalyzer {
                 // generate a comment in MIPS to note which values and which operation we did.
                 mips.codeGen("#\t:= "+lhsLoc+" "+op+" "+rhsLoc);
                 
-                int currOff = st.getOffSet();
-                er.setOffset(currOff);
+                //int currOff = st.getOffSet();
+                //er.setOffset(currOff);
                 er = er.setReg(tempReg1);
                 
                 ex = er;    // copy this information to the Global Expression Record to be used by the calling function.
@@ -1058,14 +1077,14 @@ public class SyntaxAnalyzer {
     
     /****************
     *   RELFACTOR
-    *   Rule 30: relfactor --> <factor> <factorprime>
+    *   Rule 30: <relfactor> --> <factor> <factorprime>
     *   
     *   @param er
     * 
-    *   Takes the expression records passed to it as a parameter and calls factor, when this returns the expression record
-    *   now contains the information from factor which is the left hand side of the expression. The Expression record is then 
-    *   used to call <factorprime> to complete the grammar.
-    * 
+    * Takes the expression records passed to it as a parameter and calls factor, 
+    * when this returns the expression record now contains the information from 
+    * factor which is the left hand side of the expression. The Expression record 
+    * is then used to call <factorprime> to complete the grammar.
     */
     private void relfactor(ExpressionRecord er) throws IOException {
         appendLMD("30,");   //  relfactor --> factor factorprime
@@ -1075,16 +1094,17 @@ public class SyntaxAnalyzer {
     
     /****************
     *   FACTORPRIME
-    *   Rule 31,32: factorprime --> RELOPTOK <factor> |  <empty>
+    *   Rule 31,32: <factorprime> --> RELOPTOK <factor> |  <empty>
     * 
     *   @param er
     * 
-    *   Takes the ExpressionRecord passed in as a parameter and saves it as the left hand side of the Expression, then creates a new
-    *   RHS Expression record and passes it to Factor, when this returns it then determines the operation to be performed, generates
-    *   the appropriate MIPS code based on the type of the LHS and RHS factors. 
+    * Takes the ExpressionRecord passed in as a parameter and saves it as the 
+    * left hand side of the Expression, then creates a new RHS Expression record 
+    * and passes it to Factor, when this returns it then determines the operation 
+    * to be performed, generates the appropriate MIPS code based on the type of 
+    * the LHS and RHS factors. 
     * 
     *   TODO: implement '<>' and '='
-    * 
     */
     private void factorprime(ExpressionRecord er) throws IOException {
         if(currentToken.type == 6) {
@@ -1119,13 +1139,14 @@ public class SyntaxAnalyzer {
                 default:    //  <
                     load1 = "$r"+reg1;
                     load2 = "$r"+reg2;
-                    // TODO = and <>
+                    //  = and <>
             }
             
             /* 
-             *  These next 2 if statements check whether the value of either expression record (lhs or rhs) is null. 
-                This is used if the location in the pseudo code is a location off the stack pointer or if it's the 
-                actual variable name declared in .data
+            These next 2 if statements check whether the value of either expression 
+            record (lhs or rhs) is null. This is used if the location in the pseudo 
+            code is a location off the stack pointer or if it's the actual variable 
+            name declared in .data
             */
             if( lhs.value != null ){
                 lhsLoc = lhs.value;
@@ -1139,7 +1160,8 @@ public class SyntaxAnalyzer {
                 rhsLoc = rhs.offSet+"($sp)";
             }
                 
-            // check if the type of the expression is integer or float because the lw is different for both, and then save it to call.
+            // check if the type of the expression is integer or float because the 
+            // lw is different for both, and then save it to call.
             if(lhs.type.equals("integer")){
                 call = "lw";
             } else {
@@ -1150,7 +1172,12 @@ public class SyntaxAnalyzer {
             mips.codeGen("#factorprime");
             mips.codeGen(call+"\t"+load1+","+lhsLoc+"\t# lhs");
             mips.codeGen(call+"\t"+load2+","+rhsLoc+"\t# rhs");
-            mips.codeGen("slt\t"+load+","+load1+","+load2);
+            
+            if( relOp.equals(">") || relOp.equals("<") )
+                mips.codeGen("slt\t"+load+","+load1+","+load2);
+            else
+                er = er.setNot();
+            
             freeReg(reg1,"r");   // free up the register
             freeReg(reg2,"r");   // free up the register
             er = er.setReg(reg);    //  save the register which the value was saved in to expression record.
@@ -1165,10 +1192,9 @@ public class SyntaxAnalyzer {
     *   
     *   @param er
     * 
-    *   matches the current token type to one of 4 cases, if none are matched the function throws an error exception and
-    *   terminates the program.
-    *
-    ************/
+    * matches the current token type to one of 4 cases, if none are matched the 
+    * function throws an error exception and terminates the program.
+    */
     private void factor(ExpressionRecord er) throws IOException {
         switch(currentToken.type) {
             case 15:    //  NOTTOK
@@ -1276,12 +1302,12 @@ public class SyntaxAnalyzer {
     *   @param token
     *   @param ex
     *   
-    * 
-    *   This function first checks if the token has been declared, if not it throws an exceptions and terminates the program.
-    *   otherwise, it copies the type, location and value of the token from the ST in the expression record and then adds some
-    *   information to the MIPS codegen which adds comments to our MIPS code.
-    *
-    ****************/
+    * This function first checks if the token has been declared, if not it throws 
+    * an exceptions and terminates the program. otherwise, it copies the type, 
+    * location and value of the token from the ST in the expression record and 
+    * then adds some information to the MIPS codegen which adds comments to our 
+    * MIPS code.
+    */
     private void idnonterm(LexicalAnalyzer.Token token, ExpressionRecord ex) throws IOException {
         appendLMD("37\n");
         LexicalAnalyzer.Token result = st.findInAllScopes(token.lexeme);
@@ -1295,7 +1321,6 @@ public class SyntaxAnalyzer {
             if( result.isConstant ){
                 ex = ex.setConstant();
             }
-            //mips.expression(result.lexeme+" @ "+result.offSet+"($sp)");   //  for output.
             token = result;
             match(token,token.type);
         }
@@ -1308,17 +1333,19 @@ public class SyntaxAnalyzer {
     /***************
     *     MATCH
     * 
-    *  @Param Token token = the current token to be matched
-    *  @param int type =  the type of the token which we expect to find according to the grammar
+    *  @Param token
+    *  @param type
     *  
-    *  This function takes the token passed to it and matches it's type to the type which was passed into the function.
-    *  If the type does not match, it throws an error and the program terminates.
-    *  If it matches the type, then it checks if the token is a 'BEGIN' or an 'END', either one will be added to the
-    *  Symbol Table via the addToTable function. ( to keep track of scopes ).
-    *  
-    *  Finally, if the token is a ';', then we have reached the end of some code in the program, and we take
-    *  this as the cue to add the expression to the MIPS codegen.
-    ***************/
+    * This function takes the token passed to it and matches it's type to the type 
+    * which was passed into the function. If the type does not match, it throws 
+    * an error and the program terminates. If it matches the type, then it checks 
+    * if the token is a 'BEGIN' or an 'END', either one will be added to the Symbol 
+    * Table via the addToTable function. ( to keep track of scopes ).
+    * 
+    * Finally, if the token is a ';', then we have reached the end of some code 
+    * in the program, and we take this as the cue to add the expression to the MIPS
+    * pseudo code generation.
+    */
     void match(LexicalAnalyzer.Token matchToken, int type) throws IOException {
         if(matchToken.type == type) {
             System.out.println("matched: "+matchToken.lexeme+" with type "+type);
@@ -1336,13 +1363,13 @@ public class SyntaxAnalyzer {
     /**************
     *   MATCHENDS
     *   
-    *   @Param Token token = the token which is to be matched
-    *   @param int type = the type of token which we are expecting to find according to the languages grammar
+    *   @Param token
+    *   @param type
     *
-    *   special match function used only in the <ifstat> and <loopstat>, this fixes 
-    *   an issue i was having with the 'end' tokens of IF and LOOP statements effecting the 
-    *   scope count in the Symbol Table.
-    ****************/
+    * Special match function used only in the <ifstat> and <loopstat>, this fixes 
+    * an issue i was having with the 'end' tokens of IF and LOOP statements affecting 
+    * the scope count in the Symbol Table.
+    */
     void matchEnds(LexicalAnalyzer.Token token, int type) throws IOException{
         if( token.type == type ){
             // great.
@@ -1355,23 +1382,37 @@ public class SyntaxAnalyzer {
         this.currentToken = scanner.getToken();
     }
     
-    public void newRecord(){
-        this.ex = new ExpressionRecord();
-    }
-    
+    /***********
+     * THROWEXCEPTION
+     * @param token
+     * @param message
+     * 
+     * Used for debugging purposed but also will let the programmer know that there
+     * is a sever error in the code that completely shuts down the Syntax Analyzer.
+     * Some information about the error is printer, such as the line number and the 
+     * lexeme of the Token which caused the exception to be thrown. Unrecoverable 
+     * errors in the Syntax Analyzer can be things like incorrect grammar, using
+     * reserved keywords as idTokens etc.
+    */
     private void throwException(LexicalAnalyzer.Token token, String message) {
         output.setErrors(" --> line: "+token.foundAt+" on Token: "+token.lexeme+",  "+message );
         mips.trashCode();
         quit();
     }
     
+    /***********
+     * ADDTOTABLE
+     * @param entry
+     * 
+     * Takes a token as a parameter and passes it to the Symbol Table to store.
+    */
     private void addToTable(LexicalAnalyzer.Token entry) {
         st.insertEntry(entry);
-        //appendLMD(lmd);
     }
     
     /************
     *   APPENDLMD
+    *   @param str
     * 
     *   Function which builds a LMD string of the rules used.
     */
@@ -1383,11 +1424,16 @@ public class SyntaxAnalyzer {
         output.print();
     }
     
+    /*
+    Recoverable errors generate a warning message and keep going, however, they
+    signl to the code generator to throw out the code as it is faulty.
+    */
     private void warningMessage(String message) {
         System.out.println("**WARNING** : "+message);
         mips.trashCode();
     }
     
+    // elegant way to end the program.
     private void quit(){
         printOutput();
         mips.WritePostLog();
@@ -1404,11 +1450,13 @@ public class SyntaxAnalyzer {
     * 
     *   This function is used to determine the type of a token.
     *   It takes the String value which is equal to the lexeme of the current Token.
-    *   It then looks at the first letter of this string to determine which type the current token is.
+    *   It then looks at the first letter of this string to determine which type 
+    *   the current token is.
     *   In Baby ADA there are only 2 choices: 
     *   a Boolean which can be either (t)rue or (f)alse, an (i)nteger or a (f)loat.
     *   
-    *   getType sets the char 'type' to the value which was determined and returns this char back to the calling routine.
+    *   getType sets the char 'type' to the value which was determined and returns 
+    *   this char back to the calling routine.
     */
     char getType(String str){
         char type;
@@ -1433,15 +1481,18 @@ public class SyntaxAnalyzer {
     * 
     *   Keeps track of the registers being used in our MIPS intermediate code
     * 
-    *   - takes a string argument which it matches to the corresponding array and then returns the first available "empty" index.
-    *   - index which are equal to 0 are considered empty, and if the index == 1, the register number is still being used.
+    *   - takes a string argument which it matches to the corresponding array and 
+    *       then returns the first available "empty" index.
+    *   - index which are equal to 0 are considered empty, and if the index == 1, 
+    *       the register number is still being used.
     * 
-    *   After an empty register is found this function returns the index number to the calling function to be used as a
-    *   corresponding register number in the MIPS code generation.
+    *   After an empty register is found this function returns the index number 
+    *   to the calling function to be used as a corresponding register number in 
+    *   the MIPS code generation.
     * 
-    *   If all of the registers are currently being used this function will return -1, and the calling function will need to deal
-    *   with this case. It will need to save the value off the stack pointer.
-    * 
+    *   If all of the registers are currently being used this function will 
+    *   return -1, and the calling function will need to deal with this case. It 
+    *   will need to save the value off the stack pointer.
     */
     int getReg(String reg){
         switch(reg){
@@ -1488,11 +1539,11 @@ public class SyntaxAnalyzer {
     *   @param i
     *   @param reg
     * 
-    *   This function is designed to help keep track of the registers which are being used
-    *   while generating MIPS code.
-    *   i is the index to change, essentially freeing the register to be used again.
-    *   reg is the string which is evaluated in the switch statement to determine which array the int i came from.
-    * 
+    * This function is designed to help keep track of the registers which are 
+    * being used while generating MIPS code.
+    * i is the index to change, essentially freeing the register to be used again.
+    * reg is the string which is evaluated in the switch statement to determine 
+    * which array the int i came from.
     */
     void freeReg(int i, String reg){
         switch(reg){

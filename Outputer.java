@@ -32,7 +32,6 @@ public class Outputer {
     
     private String LMD;
     private String parseTree;
-    private String symbols;
     
     private String errors;
     

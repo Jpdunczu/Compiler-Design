@@ -1,10 +1,8 @@
 package cs4110.homework.pkg1;
 
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -18,6 +16,7 @@ public class CodeGen {
     boolean trashCode;  //  if true the code generation is not printed to a file. Only true if the SA detects an error.
     String outputFile;
     
+    // these 2 are just used to create a filename of the date and time.
     Date date;
     SimpleDateFormat dateFormat;
     
@@ -39,10 +38,6 @@ public class CodeGen {
         strings = new String();
         expression = new String();
         words = new String();
-    }
-    
-    public void codeGenFile(String file){
-        this.outputFile = file;
     }
     
     public void WriteProlog(){

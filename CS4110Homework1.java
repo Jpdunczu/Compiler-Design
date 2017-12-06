@@ -10,7 +10,7 @@ import java.io.IOException;
 public class CS4110Homework1 {
 
     /**
-     * @param args the command line arguments
+     * @param args
      * @throws java.io.IOException
      * @throws java.lang.InstantiationException
      * @throws java.lang.IllegalAccessException
@@ -25,7 +25,6 @@ public class CS4110Homework1 {
         parser.loadFile(file);
         parser.start();
         parser.printOutput();
-        
     }
     
 }

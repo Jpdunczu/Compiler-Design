@@ -9,7 +9,7 @@ public class SymbolTable {
     
     private int scope;  // keeps track of the current scope.
     private int scopeCount; // keeps track of the total number of scopes.
-    private ArrayList[] table; // stores tokens from the current scope.
+    private ArrayList[] table; // an Array of ArrayLists to hold the 
     private final ArrayList<ArrayList[]> stack; // stores all tables which have been created, essentially a stack of tables.
     
     /**********
