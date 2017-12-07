@@ -17,7 +17,7 @@ public class CS4110Homework1 {
      */
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
         // TODO code application logic here
-        File file = new File("/Users/joshuaduncan/NetBeansProjects/CS4110.homework.1/src/cs4110/homework/pkg1/test_mulops.txt");
+        File file = new File("/Users/joshuaduncan/NetBeansProjects/CS4110.homework.1/src/cs4110/homework/pkg1/test_bools.txt");
         //String path = args[0];
         //File file = new File(path);
         Outputer output = new Outputer();

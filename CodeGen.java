@@ -8,12 +8,17 @@ import java.util.Date;
 
 public class CodeGen {
     
-    PrintWriter intermediateCode;   //  for printing the output and saving it in a file.
+    //  for printing the output and saving it in a file.
+    PrintWriter intermediateCode;   
     int labelCount; //  int used to generate unique labels.
     String strings;  //  list to keep track of the strings seen.
-    String expression;  //  string to print out the expression which is being translated into mips.
+    
+    //  string to print out the expression which is being translated into mips.
+    String expression;  
     String words;   //  string used for declarations.
-    boolean trashCode;  //  if true the code generation is not printed to a file. Only true if the SA detects an error.
+    
+    //if true the code generation is not printed to a file. Only true if the SA detects an error.
+    boolean trashCode;  
     String outputFile;
     
     // these 2 are just used to create a filename of the date and time.
@@ -73,6 +78,10 @@ public class CodeGen {
     public void printMipsCode(){
         if( !trashCode ){
             intermediateCode.println(mips);
+            intermediateCode.close();
+        } else {
+            intermediateCode.println("THERE WAS AN ERROR IN THE PROGRAM, GO TO"
+                    + " DEBUG INFORMATION AND CHECK ***WARNINGS***");
             intermediateCode.close();
         }
     }

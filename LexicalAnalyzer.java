@@ -46,8 +46,10 @@ public class LexicalAnalyzer extends FileReader {
     stored in this list and any idToken scanned from the program is first compared
     to this list to make sure it is not a reserved keyword. 
     */
-    private static final List<String> KEYWORDS = new ArrayList<>(Arrays.asList("begin", "constant", "declare", "end", "get", "if", 
-                "is", "loop", "not", "procedure", "put", "put_line", "then", "while"));
+    private static final List<String> KEYWORDS = 
+            new ArrayList<>(Arrays.asList("begin", "constant", "declare", "end", 
+                    "get", "if", "is", "loop", "not", "procedure", "put", 
+                        "put_line", "then", "while"));
     
     // this is set to true when the 'EOF' token is read in and signifies the end
     // of file.
@@ -115,8 +117,9 @@ public class LexicalAnalyzer extends FileReader {
          * 
          * @param type
          * 
-         * Takes the parameter and matches it to a case, then it sets the strType variable as the type, and sets the offset of 
-         * this Token to the corresponding value for the type it is.
+         * Takes the parameter and matches it to a case, then it sets the strType 
+         * variable as the type, and sets the offset of this Token to the 
+         * corresponding value for the type it is.
         */
         public void changeType(String type){
             switch(type.toLowerCase()){

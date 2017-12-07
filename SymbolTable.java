@@ -10,7 +10,9 @@ public class SymbolTable {
     private int scope;  // keeps track of the current scope.
     private int scopeCount; // keeps track of the total number of scopes.
     private ArrayList[] table; // an Array of ArrayLists to hold the 
-    private final ArrayList<ArrayList[]> stack; // stores all tables which have been created, essentially a stack of tables.
+    
+    // stores all tables which have been created, essentially a stack of tables.
+    private final ArrayList<ArrayList[]> stack; 
     
     /**********
     *   LIST
@@ -20,11 +22,17 @@ public class SymbolTable {
     */
     private ArrayList<LexicalAnalyzer.Token> list;  
     
-    LexicalAnalyzer.Token token;    // tokens which are passed from the Lexical Analyzer to the symbol table for storage.
+    // tokens which are passed from the Lexical Analyzer to the symbol table for storage.
+    LexicalAnalyzer.Token token;    
     Outputer output;    //  used for printing output 
-    int offSet; //  keeps track of the current offset of the MIPS pseudo code stack pointer, for code generation. Each token inserted 
-                //  to the symbol table contains an integer value which represents the size of the variable, 
-                //  integers and booleans == -4, and floats == -8.
+    
+    /*
+    keeps track of the current offset of the MIPS pseudo code stack pointer, for 
+    code generation. Each token inserted to the symbol table contains an integer 
+    value which represents the size of the variable, integers and booleans == -4, 
+    and floats == -8.
+    */
+    int offSet; 
     
     /********
     *   SYMBOLTABLE
@@ -65,7 +73,7 @@ public class SymbolTable {
         
         //  check if we are beginning or ending a scope.
         switch (token.lexeme.toLowerCase()){
-            case "begin":
+            case "declare":
                 table = new ArrayList[11];  // create a new table for the new scope.
                 this.scopeCount++;  // increment the scope count
                 stack.add(scopeCount, table);   // add the table to the stack 
@@ -130,7 +138,9 @@ public class SymbolTable {
             table[hash] = new <LexicalAnalyzer.Token>ArrayList();
         
         table[hash].add(token);
-        output.dTree("SymbolTable insert: "+token.lexeme+" of type: "+token.strType+", at Offset: "+offSet+" and isConstant="+token.isConstant);
+        output.dTree("SymbolTable insert: "+token.lexeme+" of type: "
+                + token.strType+", at Offset: "+offSet+" and isConstant="
+                    + token.isConstant);
         stack.set(scopeCount,table);
     }
     
@@ -156,7 +166,7 @@ public class SymbolTable {
     public LexicalAnalyzer.Token findInAllScopes(String value){
         int hash = getHash(value);
         int currentScope = 0;
-        while( currentScope <= scopeCount ){
+        while( currentScope <= scope ){
             table = stack.get(currentScope);
             if( table[hash] != null ){
                 list = table[hash];

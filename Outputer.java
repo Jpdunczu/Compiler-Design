@@ -182,7 +182,6 @@ public class Outputer {
     }
     
     public void dTree(String str){
-        //this.parseTree = this.parseTree.concat("\n"+str+"\n");
         setLMD(str+"\n");
     }
    
